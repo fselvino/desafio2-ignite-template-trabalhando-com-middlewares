@@ -10,19 +10,67 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers
+  
+  const user =  users.find(user => user.username === username)
+
+  if(!user){
+    return response.status(404).json({error: "User not found"})
+  }
+  request.user = user
+  return next()
+
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const {user} = request
+  const todos = user.todos.length
+
+  if((user.pro === false && todos < 10) || user.pro === true){
+    return next()
+  }else{
+    return response.status(403).json({error: "User the acess retricto"})
+  }
+}
+ 
+function checksTodoExists(request, response, next) {
+const {username} = request.headers
+const {id} = request.params
+
+const user = users.find(user => user.username === username)
+
+if(!user) {
+  return response.status(404).json({error: "User not found"})
 }
 
-function checksTodoExists(request, response, next) {
-  // Complete aqui
+const todos = user.todos.find((todo) => todo.id === id)
+
+const validaUUID = validate(id)
+
+if(!validaUUID){
+  return response.status(400).json({error: "ID to TODO is invalide"})
+}
+
+if(!(validaUUID && todos && user)){
+  return response.status(404).json({error: "informaçoes incorretas"})
+}
+
+//console.log(todos)
+
+request.todo = todos
+request.user = user
+return next()
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const {id} = request.params
+   const user =  users.find(user => user.id === id)
+
+  if(!user){
+    return response.status(404).json({error: "User not found"})
+  }
+  request.user = user
+  return next()
 }
 
 app.post('/users', (request, response) => {
@@ -68,6 +116,7 @@ app.patch('/users/:id/pro', findUserById, (request, response) => {
 app.get('/todos', checksExistsUserAccount, (request, response) => {
   const { user } = request;
 
+
   return response.json(user.todos);
 });
 
@@ -92,6 +141,7 @@ app.put('/todos/:id', checksTodoExists, (request, response) => {
   const { title, deadline } = request.body;
   const { todo } = request;
 
+ 
   todo.title = title;
   todo.deadline = new Date(deadline);
 
